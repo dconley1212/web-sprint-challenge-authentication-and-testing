@@ -1,17 +1,30 @@
 const router = require("express").Router();
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
+const { JWT_SECRET } = require("../../config/index");
 const Users = require("../users/users-model");
 const { BCRYPT_ROUNDS } = require("../../config/index");
 const {
+  checkUsernameFree,
   checkUsernameExists,
   validateRequestBody,
 } = require("../middleware/auth-middleware");
 
+function buildToken(user) {
+  const payload = {
+    subject: user.id,
+    username: user.username,
+  };
+  const options = {
+    expiresIn: "1d",
+  };
+  return jwt.sign(payload, JWT_SECRET, options);
+}
+
 router.post(
   "/register",
   validateRequestBody,
-  checkUsernameExists,
+  checkUsernameFree,
   async (req, res, next) => {
     try {
       const { username, password } = req.body;
@@ -51,9 +64,29 @@ router.post(
   }
 );
 
-router.post("/login", (req, res) => {
-  res.end("implement login, please!");
-  /*
+router.post(
+  "/login",
+  validateRequestBody,
+  checkUsernameExists,
+  (req, res, next) => {
+    const { username, password } = req.body;
+    Users.findBy({ username })
+      .then(([filteredUser]) => {
+        if (
+          filteredUser &&
+          bcrypt.compareSync(password, filteredUser.password)
+        ) {
+          const token = buildToken(filteredUser);
+          res.status(200).json({
+            message: `welcome ${filteredUser.username}`,
+            token: token,
+          });
+        } else {
+          next({ status: 401, message: "invalid credentials" });
+        }
+      })
+      .catch(next);
+    /*
     IMPLEMENT
     You are welcome to build additional middlewares to help with the endpoint's functionality.
 
@@ -76,6 +109,7 @@ router.post("/login", (req, res) => {
     4- On FAILED login due to `username` not existing in the db, or `password` being incorrect,
       the response body should include a string exactly as follows: "invalid credentials".
   */
-});
+  }
+);
 
 module.exports = router;

@@ -9,14 +9,28 @@ const validateRequestBody = (req, res, next) => {
   }
 };
 
+const checkUsernameFree = async (req, res, next) => {
+  try {
+    const { username } = req.body;
+    const usernameExists = await Users.findBy({ username });
+    if (!usernameExists || !usernameExists.length) {
+      next();
+    } else {
+      next({ status: 422, message: "username taken" });
+    }
+  } catch (err) {
+    next(err);
+  }
+};
+
 const checkUsernameExists = async (req, res, next) => {
   try {
     const { username } = req.body;
     const usernameExists = await Users.findBy({ username });
-    if (usernameExists || !usernameExists.length) {
+    if (usernameExists) {
       next();
     } else {
-      next({ status: 401, message: "username taken" });
+      next({ status: 401, message: "invalid credentials" });
     }
   } catch (err) {
     next(err);
@@ -26,4 +40,5 @@ const checkUsernameExists = async (req, res, next) => {
 module.exports = {
   checkUsernameExists,
   validateRequestBody,
+  checkUsernameFree,
 };
