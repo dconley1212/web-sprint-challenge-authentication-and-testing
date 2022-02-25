@@ -22,12 +22,3 @@ describe("[Get] /api/jokes", () => {
     expect(res.status).toBe(401);
   });
 });
-
-describe("[POST] /api/auth", () => {
-  test("it should return a 200 ok status", async () => {
-    const res = await request(server)
-      .post("/api/auth/register")
-      .send({ name: "johnny", password: "djlkasf" });
-    expect(res.status).toBe(201);
-  });
-});
